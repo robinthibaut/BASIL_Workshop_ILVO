@@ -15,7 +15,7 @@ data_dir = Directories.data_dir  # this is the data directory
 output_dir = Directories.results_dir  # this is the output directory
 
 # Let's demonstrate the approach on the second pair.
-pn = 'pair3'  # pair name
+pn = 'pair2'  # pair name
 pair2 = join(data_dir, pn)  # path to the second pair
 X_train = np.load(join(pair2, 'X_train.npy'))  # load the predictors for the training set
 y_train = np.load(join(pair2, 'y_train.npy'))  # load the target for the training set
@@ -68,8 +68,8 @@ plt.show()
 # You might have observed that the predictors sometimes contain negative values or very small values.
 # This is due to numerical effect, and we will not go into the details here.
 # Since the concentration cannot be negative, we will first replace the negative values by zero.
-X_train[X_train < 1e-4] = 0
-X_test[X_test < 1e-4] = 0
+X_train[X_train < 1e-5] = 0
+X_test[X_test < 1e-5] = 0
 
 # Let's first create a preprocessor for the predictors.
 pipeline_x = Pipeline([('scaler', StandardScaler()),
@@ -99,7 +99,7 @@ from basil.functions import probabilistic_variational_model
 # You just need to specify the input and output shapes.
 model = probabilistic_variational_model(input_shape=X_train_scaled.shape,
                                         output_shape=y_train_scaled.shape,
-                                        learn_r=0.001, )
+                                        learn_r=0.001,)
 
 # Let's now train the model.
 # You can specify the number of epochs and the batch size.
