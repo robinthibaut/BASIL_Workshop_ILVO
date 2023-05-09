@@ -3,6 +3,11 @@ import numpy as np  # for numerical operations
 import tensorflow_probability as tfp  # for Bayesian neural networks
 from tensorflow_probability import distributions as tfd  # for distributions
 
+__all__ = [
+    "probabilistic_variational_model",
+    "compute_kl_divs",
+]
+
 
 def neg_log_likelihood(x, rv_x):
     """Negative log likelihood of the data under the distribution."""

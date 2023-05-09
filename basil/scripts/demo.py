@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import tensorflow_probability as tfp
+
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.pipeline import Pipeline
 
@@ -90,8 +92,10 @@ from basil.functions import probabilistic_variational_model
 # Let's now create a model.
 # You just need to specify the input and output shapes.
 model = probabilistic_variational_model(input_shape=X_train_scaled.shape,
-                                        output_shape=y_train_scaled.shape)
-model.summary()
+                                        output_shape=y_train_scaled.shape,
+                                        learn_r=0.01, )
+model.summary()  # print the model summary
+
 # Let's now train the model.
 # You can specify the number of epochs and the batch size.
 # define an early stopping callback
@@ -106,7 +110,7 @@ history = model.fit(
     X_train_scaled,
     y_train_scaled,
     epochs=500,  # number of epochs
-    batch_size=32,  # batch size
+    batch_size=64,  # batch size
     verbose=1,  # verbose
     validation_split=0.1,  # validation split
     callbacks=[early_stopping],  # early stopping
@@ -128,7 +132,7 @@ y_post1 = model(X_test_scaled[0].reshape(1, -1, 2))
 
 # y_post1 is the posterior distribution of the target conditioned on the predictor X_test_scaled[0].
 # Let's sample from this distribution.
-y_post1_sample = y_post1.sample(1000).numpy().reshape(-1,)  # sample from the posterior distribution
+y_post1_sample = y_post1.sample(1000).numpy().reshape(-1, )  # sample from the posterior distribution
 # Let's now plot the distribution of the target.
 # It is always a good idea to plot the posterior distribution of the target on top of the prior distribution.
 plt.hist(y_train_scaled, density=True, label='Prior')
@@ -142,4 +146,34 @@ plt.title('Distribution of the target')
 plt.legend()
 plt.show()
 
+
 # What do you think of the result?
+
+# Let's compute our metric of interest.
+def kl_div(y_true, y_pred):
+    ideal_dist = tfp.distributions.Normal(loc=y_true, scale=0.1)
+    predicted_dist = tfp.distributions.Normal(loc=y_pred.mean(), scale=y_pred.std())
+    return tfp.distributions.kl_divergence(ideal_dist, predicted_dist)
+
+
+# Let's first compute the KL divergence between the prior and the posterior.
+kl_div1 = kl_div(y_test_scaled[0], y_post1_sample).numpy()
+
+# What's the score?
+
+# Now let's predict the whole test set
+y_post = model(X_test_scaled)
+
+# I already created a function to compute the KL divergence on the whole test set.
+from basil.functions import compute_kl_divs
+
+kl_divs = compute_kl_divs(y_test_scaled, y_post).numpy()
+
+# Let's now plot the distribution of the KL divergence.
+plt.hist(kl_divs, density=True)
+plt.xlabel('KL divergence')
+plt.ylabel('Frequency')
+plt.title('Distribution of the KL divergence')
+plt.show()
+
+# Now repeat the same experiment with the other pair of predictors.

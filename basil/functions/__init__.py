@@ -1,1 +1,1 @@
-from .regression import probabilistic_variational_model, compute_kl_divs
+from .regression import *
