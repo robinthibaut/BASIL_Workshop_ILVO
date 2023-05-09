@@ -122,3 +122,24 @@ plt.legend(['Training loss', 'Validation loss'])
 plt.show()
 
 # Great! The training loss and validation loss are decreasing.
+# Let's now evaluate the model on the test set.
+# Let's first predict the target for one example in the test set.
+y_post1 = model(X_test_scaled[0].reshape(1, -1, 2))
+
+# y_post1 is the posterior distribution of the target conditioned on the predictor X_test_scaled[0].
+# Let's sample from this distribution.
+y_post1_sample = y_post1.sample(1000).numpy().reshape(-1,)  # sample from the posterior distribution
+# Let's now plot the distribution of the target.
+# It is always a good idea to plot the posterior distribution of the target on top of the prior distribution.
+plt.hist(y_train_scaled, density=True, label='Prior')
+plt.hist(y_post1_sample, density=True, alpha=0.8, label='Posterior')
+# plot the true value
+plt.axvline(y_test_scaled[0], color='red', label='True value')
+plt.xlim([0, 1])
+plt.xlabel('Arrival time (days - scaled)')
+plt.ylabel('Frequency')
+plt.title('Distribution of the target')
+plt.legend()
+plt.show()
+
+# What do you think of the result?

@@ -68,8 +68,16 @@ def probabilistic_variational_model(
         learn_r: float = 0.001,
         num_components: int = 1,
 ):
-    params_size = tfp.layers.MixtureNormal.params_size(num_components, output_shape[-1])
-    kl_weight = 1 / input_shape[0]
+    """
+    Probabilistic variational model for regression.
+    :param input_shape: tuple, shape of the input data
+    :param output_shape: tuple, shape of the output data
+    :param learn_r: float, learning rate
+    :param num_components: int, number of components in the mixture model
+    :return: tf.keras.Sequential, probabilistic variational model
+    """
+    params_size = tfp.layers.MixtureNormal.params_size(num_components, output_shape[-1])  # Number of parameters
+    kl_weight = 1 / input_shape[0]  # Weight for the KL divergence
     model = tf.keras.Sequential(
         [
             tf.keras.layers.InputLayer(input_shape=(input_shape[1], input_shape[2])),  # Input layer
@@ -99,3 +107,10 @@ def probabilistic_variational_model(
     model.compile(optimizer=optimizer, loss=neg_log_likelihood)  # Compile model with loss and optimizer
 
     return model
+
+
+@tf.function
+def compute_kl_divs(y_true, y_pred):
+    ideal_dist = tfp.distributions.Normal(loc=y_true, scale=0.1)
+    predicted_dist = tfp.distributions.Normal(loc=y_pred.mean(), scale=y_pred.stddev())
+    return tfp.distributions.kl_divergence(ideal_dist, predicted_dist)
