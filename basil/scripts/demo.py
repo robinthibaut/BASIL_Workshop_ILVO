@@ -1,0 +1,124 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.pipeline import Pipeline
+
+from os.path import join
+
+from basil.config import Directories
+
+main_dir = Directories.main_dir
+data_dir = Directories.data_dir
+
+# Let's demonstrate the approach on the second pair.
+pair2 = join(data_dir, 'pair2')  # path to the second pair
+X_train = np.load(join(pair2, 'X_train.npy'))  # load the predictors for the training set
+y_train = np.load(join(pair2, 'y_train.npy'))  # load the target for the training set
+X_test = np.load(join(pair2, 'X_test.npy'))  # load the predictors for the test set
+y_test = np.load(join(pair2, 'y_test.npy'))  # load the target for the test set
+
+# X contains the breakthrough curves at the two sensors.
+# It has a total of 101 time steps, and two predictors (one for each sensor).
+
+# y is the arrival time of the contaminant at the river, in days.
+
+# Let's have a look at the data.
+print(X_train.shape)  # (7999, 101, 2) (I intended to have 8000 samples, but I accidentally deleted one :))
+print(y_train.shape)  # (7999, 1)
+print(X_test.shape)  # (2000, 101, 2)
+print(y_test.shape)  # (2000, 1)
+
+# Let's plot the predictors for some samples in the training set.
+n_to_show = 1000  # number of samples to show
+# Let's first load the time steps.
+t = np.load(join(data_dir, 'times.npy')).reshape(-1, )  # load the time steps and flatten the array
+plt.plot(np.repeat(t, n_to_show).reshape(-1, n_to_show), X_train[:n_to_show, :, 0].T, color='blue')
+plt.xlabel('Time (days)')
+plt.ylabel('Concentration (mg/L)')
+plt.title('Predictor 1')
+plt.show()
+
+plt.plot(np.repeat(t, n_to_show).reshape(-1, n_to_show), X_train[:n_to_show, :, 1].T, color='red')
+plt.xlabel('Time (days)')
+plt.ylabel('Concentration (mg/L)')
+plt.title('Predictor 2')
+plt.show()
+
+# The target is the arrival time of the contaminant at the river, in days.
+# It is univariate, so we can directly plot the distribution of the target.
+plt.hist(y_train)
+plt.xlabel('Arrival time (days)')
+plt.ylabel('Frequency')
+plt.title('Distribution of the target')
+plt.show()
+
+# Let's now create a pipeline to preprocess the data.
+# In machine learning, it is often a good idea to scale the data before applying any algorithm.
+# Here, we will use the StandardScaler from scikit-learn.
+
+# You might have observed that the predictors sometimes contain negative values or very small values.
+# This is due to numerical effect, and we will not go into the details here.
+# Since the concentration cannot be negative, we will first replace the negative values by zero.
+X_train[X_train < 1e-4] = 0
+X_test[X_test < 1e-4] = 0
+
+# Let's first create a preprocessor for the predictors.
+pipeline_x = Pipeline([('scaler', StandardScaler()),
+                       ('minmax', MinMaxScaler(feature_range=(0, 1)))])
+# Let's now fit the scaler on the training data.
+pipeline_x.fit(X_train.reshape(-1, 2))
+# Let's now transform the training data.
+X_train_scaled = pipeline_x.transform(X_train.reshape(-1, 2)).reshape(-1, 101, 2)
+# Let's now transform the test data.
+X_test_scaled = pipeline_x.transform(X_test.reshape(-1, 2)).reshape(-1, 101, 2)
+
+# Let's now create a pipeline for the target
+pipeline_y = Pipeline([('scaler', StandardScaler()),
+                       ('minmax', MinMaxScaler(feature_range=(0, 1)))])
+# Let's now fit the scaler on the training data.
+pipeline_y.fit(y_train)
+# Let's now transform the training data.
+y_train_scaled = pipeline_y.transform(y_train)
+# Let's now transform the test data.
+y_test_scaled = pipeline_y.transform(y_test)
+
+# I already created a neural network architecture for you.
+# you can just import it as follows.
+from basil.functions import probabilistic_variational_model
+
+# Let's now create a model.
+# You just need to specify the input and output shapes.
+model = probabilistic_variational_model(input_shape=X_train_scaled.shape,
+                                        output_shape=y_train_scaled.shape)
+model.summary()
+# Let's now train the model.
+# You can specify the number of epochs and the batch size.
+# define an early stopping callback
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    patience=10,  # number of epochs with no improvement after which training will be stopped
+    restore_best_weights=True,  # restore the best model
+)
+
+# fit the model
+history = model.fit(
+    X_train_scaled,
+    y_train_scaled,
+    epochs=500,  # number of epochs
+    batch_size=32,  # batch size
+    verbose=1,  # verbose
+    validation_split=0.1,  # validation split
+    callbacks=[early_stopping],  # early stopping
+)
+
+# Let's now plot the training history.
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training history')
+plt.legend(['Training loss', 'Validation loss'])
+plt.show()
+
+# Great! The training loss and validation loss are decreasing.
