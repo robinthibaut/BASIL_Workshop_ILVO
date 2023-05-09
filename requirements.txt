@@ -1,0 +1,6 @@
+numpy
+matplotlib
+jupyter
+scikit-learn
+tensorflow
+tensorflow_probability
