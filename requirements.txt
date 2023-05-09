@@ -1,3 +1,0 @@
-black
-loguru
-# add your own requirements here
