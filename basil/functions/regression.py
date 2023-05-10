@@ -6,6 +6,7 @@ from tensorflow_probability import distributions as tfd  # for distributions
 __all__ = [
     "probabilistic_variational_model",
     "compute_kl_divs",
+    "black_box"
 ]
 
 
@@ -93,9 +94,16 @@ def probabilistic_variational_model(
                 kernel_initializer=tf.keras.initializers.Zeros(),
             ),
             tf.keras.layers.MaxPool1D(pool_size=2),  # Pooling layer
+            tf.keras.layers.Conv1D(
+                filters=8,
+                kernel_size=2,
+                padding="same",
+                kernel_initializer=tf.keras.initializers.Zeros(),
+            ),
+            tf.keras.layers.MaxPool1D(pool_size=2),  # Pooling layer
             tf.keras.layers.Flatten(),
             tfp.layers.DenseVariational(
-                units=12,
+                units=20,
                 make_prior_fn=prior_trainable,
                 make_posterior_fn=posterior_mean_field,
                 kl_weight=kl_weight,
@@ -103,6 +111,7 @@ def probabilistic_variational_model(
                 name="var1",
                 activation="relu",
             ),  # Hidden layer 1
+            tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(params_size),  # Hidden layer 2
             tfp.layers.MixtureNormal(num_components, output_shape[-1]),  # Mixture layer
         ],
@@ -119,3 +128,34 @@ def compute_kl_divs(y_true, y_pred):
     ideal_dist = tfp.distributions.Normal(loc=y_true, scale=0.1)
     predicted_dist = tfp.distributions.Normal(loc=y_pred.mean(), scale=y_pred.stddev())
     return tfp.distributions.kl_divergence(ideal_dist, predicted_dist)
+
+
+def black_box(X, y):
+    # Let's now create a model.
+    # You just need to specify the input and output shapes.
+    model = probabilistic_variational_model(input_shape=X.shape,
+                                            output_shape=y.shape,
+                                            learn_r=0.001,)
+
+    # Let's now train the model.
+    # You can specify the number of epochs and the batch size.
+    # define an early stopping callback
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss",
+        patience=10,  # number of epochs with no improvement after which training will be stopped
+        restore_best_weights=True,  # restore the best model
+    )
+
+    # fit the model
+    history = model.fit(
+        X,
+        y,
+        epochs=500,  # number of epochs - one epoch is one iteration over the entire training set
+        batch_size=32,  # batch size - number of samples per gradient update
+        verbose=1,  # verbose mode - 0: silent, 1: not silent
+        validation_split=0.2,  # validation split - 20% of the training data will be used for validation
+        callbacks=[early_stopping],  # early stopping  - stop training when the validation loss is not decreasing
+        # anymore
+    )
+
+    return model, history

@@ -93,33 +93,15 @@ y_test_scaled = pipeline_y.transform(y_test)
 
 # I already created a neural network architecture for you.
 # you can just import it as follows.
-from basil.functions import probabilistic_variational_model
+from basil.functions import black_box
 
-# Let's now create a model.
-# You just need to specify the input and output shapes.
-model = probabilistic_variational_model(input_shape=X_train_scaled.shape,
-                                        output_shape=y_train_scaled.shape,
-                                        learn_r=0.001,)
+# The function black_box takes as input the training data and returns the trained model and the training history.
+# The shape of the training data should be (n_samples, n_time_steps, n_features).
 
-# Let's now train the model.
-# You can specify the number of epochs and the batch size.
-# define an early stopping callback
-early_stopping = tf.keras.callbacks.EarlyStopping(
-    monitor="val_loss",
-    patience=10,  # number of epochs with no improvement after which training will be stopped
-    restore_best_weights=True,  # restore the best model
-)
+model, history = black_box(X_train_scaled, y_train_scaled)
 
-# fit the model
-history = model.fit(
-    X_train_scaled,
-    y_train_scaled,
-    epochs=500,  # number of epochs - one epoch is one iteration over the entire training set
-    batch_size=32,  # batch size - number of samples per gradient update
-    verbose=1,  # verbose mode - 0: silent, 1: not silent
-    validation_split=0.1,  # validation split - 10% of the training data will be used for validation
-    callbacks=[early_stopping],  # early stopping  - stop training when the validation loss is not decreasing anymore
-)
+# Instead of using my black box function, you can also create your own neural network architecture,
+# or use any other machine learning algorithm.
 
 # Let's now plot the training history.
 plt.plot(history.history['loss'])
