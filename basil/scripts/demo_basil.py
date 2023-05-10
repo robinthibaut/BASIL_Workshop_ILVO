@@ -71,6 +71,7 @@ plt.show()
 X_train[X_train < 1e-5] = 0
 X_test[X_test < 1e-5] = 0
 
+
 # Let's first create a preprocessor for the predictors.
 pipeline_x = Pipeline([('scaler', StandardScaler()),
                        ('minmax', MinMaxScaler(feature_range=(0, 1)))])
@@ -115,7 +116,7 @@ plt.show()
 # Great! The training loss and validation loss are decreasing.
 # Let's now evaluate the model on the test set.
 # Let's first predict the target for one example in the test set.
-y_post1 = model(X_test_scaled[0].reshape(1, -1, 2))
+y_post1 = model(X_test_scaled[50].reshape(1, -1, 2))
 
 # y_post1 is the posterior distribution of the target conditioned on the predictor X_test_scaled[0].
 # Let's sample from this distribution.
@@ -125,11 +126,19 @@ y_post1_sample = y_post1.sample(1000).numpy().reshape(-1, )  # sample from the p
 plt.hist(y_train_scaled, density=True, label='Prior')
 plt.hist(y_post1_sample, density=True, alpha=0.8, label='Posterior')
 # plot the true value
-plt.axvline(y_test_scaled[0], color='red', label='True value')
+plt.axvline(y_test_scaled[50], color='red', label='True value')
 plt.xlim([0, 1])
 plt.xlabel('Arrival time (days - scaled)')
 plt.ylabel('Frequency')
 plt.title('Distribution of the target')
+plt.legend()
+plt.show()
+
+plt.plot(X_test_scaled[50, :, 0], label='Predictor 1')
+plt.plot(X_test_scaled[50, :, 1], label='Predictor 2')
+plt.xlabel('Time (days)')
+plt.ylabel('Concentration (mg/L)')
+plt.title('Predictors')
 plt.legend()
 plt.show()
 
