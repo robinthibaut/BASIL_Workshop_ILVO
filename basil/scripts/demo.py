@@ -18,9 +18,9 @@ output_dir = Directories.results_dir  # this is the output directory
 pn = 'pair2'  # pair name
 pair2 = join(data_dir, pn)  # path to the second pair
 X_train = np.load(join(pair2, 'X_train.npy'))  # load the predictors for the training set
-y_train = np.load(join(pair2, 'y_train.npy'))  # load the target for the training set
+y_train = np.load(join(pair2, 'Y_train.npy'))  # load the target for the training set
 X_test = np.load(join(pair2, 'X_test.npy'))  # load the predictors for the test set
-y_test = np.load(join(pair2, 'y_test.npy'))  # load the target for the test set
+y_test = np.load(join(pair2, 'Y_test.npy'))  # load the target for the test set
 
 # X contains the breakthrough curves at the two sensors.
 # It has a total of 101 time steps, and two predictors (one for each sensor).
@@ -60,3 +60,4 @@ plt.xlabel('Arrival time (days)')
 plt.ylabel('Frequency')
 plt.title('Distribution of the target')
 plt.show()
+
