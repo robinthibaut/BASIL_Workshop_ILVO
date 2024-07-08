@@ -2,5 +2,5 @@ numpy
 matplotlib
 jupyter
 scikit-learn
-tensorflow
-tensorflow_probability
+tensorflow==2.14
+tensorflow_probability==0.22

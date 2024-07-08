@@ -1,12 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow as tf  # for neural networks
-import tensorflow_probability as tfp  # for Bayesian neural networks
-
-from sklearn.preprocessing import StandardScaler, MinMaxScaler  # for preprocessing
-from sklearn.pipeline import Pipeline  # to create a pipeline
-
 from os.path import join  # to join paths
+
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow_probability as tfp  # for Bayesian neural networks
+from sklearn.pipeline import Pipeline  # to create a pipeline
+from sklearn.preprocessing import StandardScaler, MinMaxScaler  # for preprocessing
 
 from basil.config import Directories  # this is the basil directory
 
@@ -15,12 +13,14 @@ data_dir = Directories.data_dir  # this is the data directory
 output_dir = Directories.results_dir  # this is the output directory
 
 # Let's demonstrate the approach on the second pair.
-pn = 'pair2'  # pair name
-pair2 = join(data_dir, pn)  # path to the second pair
-X_train = np.load(join(pair2, 'X_train.npy'))  # load the predictors for the training set
-y_train = np.load(join(pair2, 'y_train.npy'))  # load the target for the training set
-X_test = np.load(join(pair2, 'X_test.npy'))  # load the predictors for the test set
-y_test = np.load(join(pair2, 'y_test.npy'))  # load the target for the test set
+pn = "pair3"  # pair name
+pair_pn = join(data_dir, pn)  # path to the second pair
+X_train = np.load(
+    join(pair_pn, "X_train.npy")
+)  # load the predictors for the training set
+y_train = np.load(join(pair_pn, "y_train.npy"))  # load the target for the training set
+X_test = np.load(join(pair_pn, "X_test.npy"))  # load the predictors for the test set
+y_test = np.load(join(pair_pn, "y_test.npy"))  # load the target for the test set
 
 # X contains the breakthrough curves at the two sensors.
 # It has a total of 101 time steps, and two predictors (one for each sensor).
@@ -28,7 +28,9 @@ y_test = np.load(join(pair2, 'y_test.npy'))  # load the target for the test set
 # y is the arrival time of the contaminant at the river, in days.
 
 # Let's have a look at the data.
-print(X_train.shape)  # (7999, 101, 2) (I intended to have 8000 samples, but I accidentally deleted one :))
+print(
+    X_train.shape
+)  # (7999, 101, 2) (I intended to have 8000 samples, but I accidentally deleted one :))
 print(y_train.shape)  # (7999, 1)
 print(X_test.shape)  # (2000, 101, 2)
 print(y_test.shape)  # (2000, 1)
@@ -36,29 +38,39 @@ print(y_test.shape)  # (2000, 1)
 # Let's plot the predictors for some samples in the training set.
 n_to_show = 1000  # number of samples to show
 # Let's first load the time steps.
-t = np.load(join(data_dir, 'times.npy')).reshape(-1, )  # load the time steps and flatten the array
+t = np.load(join(data_dir, "times.npy")).reshape(
+    -1,
+)  # load the time steps and flatten the array
 
 # Let's plot the predictors for the first n_to_show samples in the training set.
 # The first predictor is the concentration at the first sensor.
-plt.plot(np.repeat(t, n_to_show).reshape(-1, n_to_show), X_train[:n_to_show, :, 0].T, color='blue')
-plt.xlabel('Time (days)')
-plt.ylabel('Concentration (mg/L)')
-plt.title('Predictor 1')
+plt.plot(
+    np.repeat(t, n_to_show).reshape(-1, n_to_show),
+    X_train[:n_to_show, :, 0].T,
+    color="blue",
+)
+plt.xlabel("Time (days)")
+plt.ylabel("Concentration (mg/L)")
+plt.title("Predictor 1")
 plt.show()
 
 # The second predictor is the concentration at the second sensor.
-plt.plot(np.repeat(t, n_to_show).reshape(-1, n_to_show), X_train[:n_to_show, :, 1].T, color='red')
-plt.xlabel('Time (days)')
-plt.ylabel('Concentration (mg/L)')
-plt.title('Predictor 2')
+plt.plot(
+    np.repeat(t, n_to_show).reshape(-1, n_to_show),
+    X_train[:n_to_show, :, 1].T,
+    color="red",
+)
+plt.xlabel("Time (days)")
+plt.ylabel("Concentration (mg/L)")
+plt.title("Predictor 2")
 plt.show()
 
 # The target is the arrival time of the contaminant at the river, in days.
 # It is univariate, so we can directly plot the distribution of the target.
 plt.hist(y_train)
-plt.xlabel('Arrival time (days)')
-plt.ylabel('Frequency')
-plt.title('Distribution of the target')
+plt.xlabel("Arrival time (days)")
+plt.ylabel("Frequency")
+plt.title("Distribution of the target")
 plt.show()
 
 # Let's now create a pipeline to preprocess the data.
@@ -73,8 +85,9 @@ X_test[X_test < 1e-5] = 0
 
 
 # Let's first create a preprocessor for the predictors.
-pipeline_x = Pipeline([('scaler', StandardScaler()),
-                       ('minmax', MinMaxScaler(feature_range=(0, 1)))])
+pipeline_x = Pipeline(
+    [("scaler", StandardScaler()), ("minmax", MinMaxScaler(feature_range=(0, 1)))]
+)
 # Let's now fit the scaler on the training data.
 pipeline_x.fit(X_train.reshape(-1, 2))
 # Let's now transform the training data.
@@ -83,8 +96,9 @@ X_train_scaled = pipeline_x.transform(X_train.reshape(-1, 2)).reshape(-1, 101, 2
 X_test_scaled = pipeline_x.transform(X_test.reshape(-1, 2)).reshape(-1, 101, 2)
 
 # Let's now create a pipeline for the target
-pipeline_y = Pipeline([('scaler', StandardScaler()),
-                       ('minmax', MinMaxScaler(feature_range=(0, 1)))])
+pipeline_y = Pipeline(
+    [("scaler", StandardScaler()), ("minmax", MinMaxScaler(feature_range=(0, 1)))]
+)
 # Let's now fit the scaler on the training data.
 pipeline_y.fit(y_train)
 # Let's now transform the training data.
@@ -105,12 +119,12 @@ model, history = black_box(X_train_scaled, y_train_scaled)
 # or use any other machine learning algorithm.
 
 # Let's now plot the training history.
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training history')
-plt.legend(['Training loss', 'Validation loss'])
+plt.plot(history.history["loss"])
+plt.plot(history.history["val_loss"])
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training history")
+plt.legend(["Training loss", "Validation loss"])
 plt.show()
 
 # Great! The training loss and validation loss are decreasing.
@@ -120,30 +134,37 @@ y_post1 = model(X_test_scaled[50].reshape(1, -1, 2))
 
 # y_post1 is the posterior distribution of the target conditioned on the predictor X_test_scaled[0].
 # Let's sample from this distribution.
-y_post1_sample = y_post1.sample(1000).numpy().reshape(-1, )  # sample from the posterior distribution
+y_post1_sample = (
+    y_post1.sample(1000)
+    .numpy()
+    .reshape(
+        -1,
+    )
+)  # sample from the posterior distribution
 # Let's now plot the distribution of the target.
 # It is always a good idea to plot the posterior distribution of the target on top of the prior distribution.
-plt.hist(y_train_scaled, density=True, label='Prior')
-plt.hist(y_post1_sample, density=True, alpha=0.8, label='Posterior')
+plt.hist(y_train_scaled, density=True, label="Prior")
+plt.hist(y_post1_sample, density=True, alpha=0.8, label="Posterior")
 # plot the true value
-plt.axvline(y_test_scaled[50], color='red', label='True value')
+plt.axvline(y_test_scaled[50], color="red", label="True value")
 plt.xlim([0, 1])
-plt.xlabel('Arrival time (days - scaled)')
-plt.ylabel('Frequency')
-plt.title('Distribution of the target')
+plt.xlabel("Arrival time (days - scaled)")
+plt.ylabel("Frequency")
+plt.title("Distribution of the target")
 plt.legend()
 plt.show()
 
-plt.plot(X_test_scaled[50, :, 0], label='Predictor 1')
-plt.plot(X_test_scaled[50, :, 1], label='Predictor 2')
-plt.xlabel('Time (days)')
-plt.ylabel('Concentration (mg/L)')
-plt.title('Predictors')
+plt.plot(X_test_scaled[50, :, 0], label="Predictor 1")
+plt.plot(X_test_scaled[50, :, 1], label="Predictor 2")
+plt.xlabel("Time (days)")
+plt.ylabel("Concentration (mg/L)")
+plt.title("Predictors")
 plt.legend()
 plt.show()
 
 
 # What do you think of the result?
+
 
 # Let's compute our metric of interest.
 def kl_div(y_true, y_pred):
@@ -165,15 +186,17 @@ from basil.functions import compute_kl_divs
 
 kl_divs = compute_kl_divs(y_test_scaled, y_post).numpy()
 # save the results for later
-np.save(join(output_dir, f'kl_div_{pn}.npy'), kl_divs)
+np.save(join(output_dir, f"kl_div_{pn}.npy"), kl_divs)
 
 # Let's now plot the distribution of the KL divergence.
 plt.hist(kl_divs, density=True)
 plt.ylim([0, 1])
-plt.xlabel('KL divergence')
-plt.ylabel('Frequency')
-plt.title('Distribution of the KL divergence')
-plt.savefig(join(output_dir, f'kl_div_{pn}.png'), dpi=300, bbox_inches='tight', transparent=True)
+plt.xlabel("KL divergence")
+plt.ylabel("Frequency")
+plt.title("Distribution of the KL divergence")
+plt.savefig(
+    join(output_dir, f"kl_div_{pn}.png"), dpi=300, bbox_inches="tight", transparent=True
+)
 plt.show()
 
 # Now repeat the same experiment with the other pair of predictors.

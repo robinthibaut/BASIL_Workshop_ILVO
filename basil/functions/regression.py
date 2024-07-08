@@ -1,13 +1,9 @@
-import tensorflow as tf  # for neural networks
 import numpy as np  # for numerical operations
+import tensorflow as tf  # for neural networks
 import tensorflow_probability as tfp  # for Bayesian neural networks
 from tensorflow_probability import distributions as tfd  # for distributions
 
-__all__ = [
-    "probabilistic_variational_model",
-    "compute_kl_divs",
-    "black_box"
-]
+__all__ = ["probabilistic_variational_model", "compute_kl_divs", "black_box"]
 
 
 def neg_log_likelihood(x, rv_x):
@@ -69,10 +65,10 @@ def random_gaussian_initializer(shape, dtype="float32"):
 
 
 def probabilistic_variational_model(
-        input_shape: tuple,
-        output_shape: tuple,
-        learn_r: float = 0.001,
-        num_components: int = 1,
+    input_shape: tuple,
+    output_shape: tuple,
+    learn_r: float = 0.001,
+    num_components: int = 1,
 ):
     """
     Probabilistic variational model for regression.
@@ -82,11 +78,15 @@ def probabilistic_variational_model(
     :param num_components: int, number of components in the mixture model
     :return: tf.keras.Sequential, probabilistic variational model
     """
-    params_size = tfp.layers.MixtureNormal.params_size(num_components, output_shape[-1])  # Number of parameters
+    params_size = tfp.layers.MixtureNormal.params_size(
+        num_components, output_shape[-1]
+    )  # Number of parameters
     kl_weight = 1 / input_shape[0]  # Weight for the KL divergence
     model = tf.keras.Sequential(
         [
-            tf.keras.layers.InputLayer(input_shape=(input_shape[1], input_shape[2])),  # Input layer
+            tf.keras.layers.InputLayer(
+                input_shape=(input_shape[1], input_shape[2])
+            ),  # Input layer
             tf.keras.layers.Conv1D(
                 filters=4,
                 kernel_size=2,
@@ -118,7 +118,60 @@ def probabilistic_variational_model(
         name="model",
     )
     optimizer = tf.keras.optimizers.Adam(learning_rate=learn_r)  # Optimizer
-    model.compile(optimizer=optimizer, loss=neg_log_likelihood)  # Compile model with loss and optimizer
+    model.compile(
+        optimizer=optimizer, loss=neg_log_likelihood
+    )  # Compile model with loss and optimizer
+
+    return model
+
+
+def pnn_model(
+    input_shape: tuple,
+    output_shape: tuple,
+    learn_r: float = 0.001,
+    num_components: int = 1,
+):
+    """
+    PNN for regression.
+    :param input_shape: tuple, shape of the input data
+    :param output_shape: tuple, shape of the output data
+    :param learn_r: float, learning rate
+    :param num_components: int, number of components in the mixture model
+    :return: tf.keras.Sequential, probabilistic variational model
+    """
+    params_size = tfp.layers.MixtureNormal.params_size(
+        num_components, output_shape[-1]
+    )  # Number of parameters
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.InputLayer(
+                input_shape=(input_shape[1], input_shape[2])
+            ),  # Input layer
+            tf.keras.layers.Conv1D(
+                filters=4,
+                kernel_size=2,
+                padding="same",
+                kernel_initializer=tf.keras.initializers.Zeros(),
+            ),
+            tf.keras.layers.MaxPool1D(pool_size=2),  # Pooling layer
+            tf.keras.layers.Conv1D(
+                filters=8,
+                kernel_size=2,
+                padding="same",
+                kernel_initializer=tf.keras.initializers.Zeros(),
+            ),
+            tf.keras.layers.MaxPool1D(pool_size=2),  # Pooling layer
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(64, activation="relu"),  # Hidden layer 1
+            tf.keras.layers.Dense(params_size),  # Hidden layer 2
+            tfp.layers.MixtureNormal(num_components, output_shape[-1]),  # Mixture layer
+        ],
+        name="model",
+    )
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learn_r)  # Optimizer
+    model.compile(
+        optimizer=optimizer, loss=neg_log_likelihood
+    )  # Compile model with loss and optimizer
 
     return model
 
@@ -133,16 +186,24 @@ def compute_kl_divs(y_true, y_pred):
 def black_box(X, y):
     # Let's now create a model.
     # You just need to specify the input and output shapes.
-    model = probabilistic_variational_model(input_shape=X.shape,
-                                            output_shape=y.shape,
-                                            learn_r=0.001,)
+    # model = probabilistic_variational_model(
+    #     input_shape=X.shape,
+    #     output_shape=y.shape,
+    #     learn_r=0.001,
+    # )
+
+    model = pnn_model(
+        input_shape=X.shape,
+        output_shape=y.shape,
+        learn_r=0.001,
+    )
 
     # Let's now train the model.
     # You can specify the number of epochs and the batch size.
     # define an early stopping callback
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor="val_loss",
-        patience=10,  # number of epochs with no improvement after which training will be stopped
+        patience=20,  # number of epochs with no improvement after which training will be stopped
         restore_best_weights=True,  # restore the best model
     )
 
@@ -154,7 +215,9 @@ def black_box(X, y):
         batch_size=32,  # batch size - number of samples per gradient update
         verbose=1,  # verbose mode - 0: silent, 1: not silent
         validation_split=0.2,  # validation split - 20% of the training data will be used for validation
-        callbacks=[early_stopping],  # early stopping  - stop training when the validation loss is not decreasing
+        callbacks=[
+            early_stopping
+        ],  # early stopping  - stop training when the validation loss is not decreasing
         # anymore
     )
 

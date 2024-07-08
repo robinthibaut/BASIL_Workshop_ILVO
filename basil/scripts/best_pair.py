@@ -12,16 +12,16 @@ data_dir = Directories.data_dir  # this is the data directory
 output_dir = Directories.results_dir  # this is the output directory
 
 # Let's load the three arrays of KL divergences.
-kl1 = np.load(join(output_dir, 'kl_div_pair1.npy'))
-kl2 = np.load(join(output_dir, 'kl_div_pair2.npy'))
-kl3 = np.load(join(output_dir, 'kl_div_pair3.npy'))
+kl1 = np.load(join(output_dir, "kl_div_pair1.npy"))
+kl2 = np.load(join(output_dir, "kl_div_pair2.npy"))
+kl3 = np.load(join(output_dir, "kl_div_pair3.npy"))
 
 # Let's plot the KL divergences for the three pairs.
-plt.hist(kl1, density=True, alpha=0.5, label='Pair 1')
-plt.hist(kl2, density=True, alpha=0.5, label='Pair 2')
-plt.hist(kl3, density=True, alpha=0.5, label='Pair 3')
-plt.xlabel('KL divergence')
-plt.ylabel('Frequency')
+plt.hist(kl1, density=True, alpha=0.5, label="Pair 1")
+plt.hist(kl2, density=True, alpha=0.5, label="Pair 2")
+plt.hist(kl3, density=True, alpha=0.5, label="Pair 3")
+plt.xlabel("KL divergence")
+plt.ylabel("Frequency")
 plt.legend()
 plt.xlim([0, 20])
 plt.show()
@@ -32,7 +32,7 @@ plt.show()
 
 # In that case, you can use the following function to find the best pair.
 
-names = ['pair1', 'pair2', 'pair3']  # names of the pairs
+names = ["pair1", "pair2", "pair3"]  # names of the pairs
 kl_divs = [kl1, kl2, kl3]  # KL divergences of the pairs
 min_kl = np.inf
 scores_kl = np.zeros(len(kl_divs))
@@ -64,3 +64,10 @@ for i in range(len(names)):
     scores_kl[i] = kl
 
 print(scores_kl)
+
+# The best pair is the one with the smallest KL divergence.
+# Print the name of the best pair.
+print(names[np.argmin(scores_kl)])
+
+# Print the rank of the pairs.
+print(np.argsort(scores_kl))
